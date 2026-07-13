@@ -2,13 +2,6 @@
 
 AI-powered rug-pull prediction market on **Base**.
 
-## Repos
-
-| Repo | Description |
-|------|-------------|
-| [guardai-be](/) | Smart contracts + Backend API + AI Agent + Docs |
-| [guardai-fe](https://github.com/.../guardai-fe) | Frontend (Next.js) |
-
 ## Structure
 
 ```
