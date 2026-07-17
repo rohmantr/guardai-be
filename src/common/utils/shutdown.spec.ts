@@ -1,6 +1,6 @@
 import { describe, expect, it, spyOn } from "bun:test";
 import { setupGracefulShutdown } from "./shutdown";
-import { AppDataSource } from "./database";
+import { AppDataSource } from "../database";
 
 describe("setupGracefulShutdown", () => {
   it("should trigger shutdown and close server/db on signal", async () => {

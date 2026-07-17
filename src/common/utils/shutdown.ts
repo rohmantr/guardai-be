@@ -1,5 +1,5 @@
 import { Server } from "http";
-import { AppDataSource } from "./database";
+import { AppDataSource } from "../database";
 import { Logger } from "./logger";
 
 export function setupGracefulShutdown(server: Server) {

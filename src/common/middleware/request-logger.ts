@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { Logger } from "./logger";
+import { Logger } from "../utils/logger";
 
 export function requestLogger(req: Request, res: Response, next: NextFunction) {
   const start = Date.now();

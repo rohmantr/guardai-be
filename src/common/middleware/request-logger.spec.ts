@@ -1,6 +1,6 @@
 import { describe, expect, it, spyOn } from "bun:test";
 import { requestLogger } from "./request-logger";
-import { Logger } from "./logger";
+import { Logger } from "../utils/logger";
 
 describe("requestLogger", () => {
   it("should log request details on response finish", () => {

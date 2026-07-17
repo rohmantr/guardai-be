@@ -1,6 +1,6 @@
 import { describe, expect, it, spyOn, afterEach } from "bun:test";
 import { errorHandler } from "./error-handler";
-import { Logger } from "./logger";
+import { Logger } from "../utils/logger";
 
 describe("errorHandler", () => {
   const mockReq = {

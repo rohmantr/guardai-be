@@ -1,9 +1,9 @@
 import express from "express";
 import { AppDataSource } from "./common/database";
-import { Logger } from "./common/logger";
-import { requestLogger } from "./common/request-logger";
-import { errorHandler } from "./common/error-handler";
-import { setupGracefulShutdown } from "./common/shutdown";
+import { Logger } from "./common/utils/logger";
+import { requestLogger } from "./common/middleware/request-logger";
+import { errorHandler } from "./common/middleware/error-handler";
+import { setupGracefulShutdown } from "./common/utils/shutdown";
 
 const app = express();
 const port = process.env.PORT ?? 3000;
