@@ -24,7 +24,6 @@ Buat integration test yang mensimulasikan end-to-end flow smart contract — dar
 8. Verify: payout correct, events emitted, state updated
 
 ### Scenario 2: Happy Path — Token Aman
-
 1. Same setup as above
 2. OracleAdapter report → false (no liquidity pull)
 3. Settlement → NO wins
