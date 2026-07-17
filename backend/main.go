@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"flag"
 	"log/slog"
 	"net/http"
 	"os"
@@ -18,7 +19,11 @@ import (
 )
 
 func main() {
-	// 1. Load config
+	// 1. Parse command-line flags
+	migrateOnly := flag.Bool("migrate-only", false, "Run database migrations and exit")
+	flag.Parse()
+
+	// 2. Load config
 	cfg := config.LoadConfig()
 
 	// 2. Set up slog JSON logger
@@ -56,6 +61,12 @@ func main() {
 		os.Exit(1)
 	}
 	slog.Info("Database migrations completed successfully.")
+
+	// If migrate-only flag is set, exit now
+	if *migrateOnly {
+		slog.Info("Migration-only run complete. Exiting.")
+		return
+	}
 
 	// 5. Set up HTTP router & handlers
 	mux := http.NewServeMux()
