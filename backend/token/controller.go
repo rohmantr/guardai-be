@@ -44,6 +44,9 @@ func (c *Controller) ListTokens(w http.ResponseWriter, r *http.Request) {
 			limit = l
 		}
 	}
+	if limit > 100 {
+		limit = 100
+	}
 
 	tokens, total, err := c.service.ListTokens(ctx, page, limit, search)
 	if err != nil {
