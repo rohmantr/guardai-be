@@ -1,5 +1,15 @@
-# Database Configuration
+# Load environment variables from .env.local if it exists, fallback to .env
+ifneq (,$(wildcard .env.local))
+    include .env.local
+    export
+else ifneq (,$(wildcard .env))
+    include .env
+    export
+endif
+
+# Database & Docker Configuration Fallbacks
 DATABASE_URL ?= postgresql://dev:dev@localhost:5432/rugradar_dev
+COMPOSE_FILE ?= docker-compose.local.yml
 
 .PHONY: build test test-all test-pp test-tr fmt check clean coverage \
 	db-up db-down db-logs db-migrate db-rollback db-status \
@@ -30,9 +40,6 @@ clean:
 
 coverage:
 	cd contracts && forge coverage --report lcov
-
-# Docker Compose Configuration
-COMPOSE_FILE ?= docker-compose.local.yml
 
 # --- Database Targets ---
 db-up:
