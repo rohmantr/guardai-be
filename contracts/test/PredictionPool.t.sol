@@ -28,6 +28,10 @@ contract PredictionPoolTest is Test {
         pool = new PredictionPool(POOL_ID, TOKEN_ADDRESS, oracle, DEADLINE);
     }
 
+    // ──────────────────────────────────────────────
+    //  Constructor
+    // ──────────────────────────────────────────────
+
     function test_Constructor_SetsState() public view {
         assertEq(pool.poolId(), POOL_ID);
         assertEq(pool.tokenAddress(), TOKEN_ADDRESS);
@@ -47,6 +51,10 @@ contract PredictionPoolTest is Test {
     function test_Constructor_SetsOwner() public view {
         assertEq(pool.owner(), owner);
     }
+
+    // ──────────────────────────────────────────────
+    //  buyPosition
+    // ──────────────────────────────────────────────
 
     function test_BuyPosition_Yes() public {
         vm.deal(trader1, 10 ether);
@@ -167,6 +175,10 @@ contract PredictionPoolTest is Test {
         // Extra ETH stays in contract — no revert
     }
 
+    // ──────────────────────────────────────────────
+    //  settle
+    // ──────────────────────────────────────────────
+
     function test_Settle_YesWins() public {
         vm.prank(oracle);
         vm.expectEmit(true, true, true, true);
@@ -217,6 +229,10 @@ contract PredictionPoolTest is Test {
         pool.settle(true);
         assertTrue(pool.isResolved());
     }
+
+    // ──────────────────────────────────────────────
+    //  claim
+    // ──────────────────────────────────────────────
 
     function test_Claim_YesWins_Proportional() public {
         vm.deal(trader1, 10 ether);
@@ -337,6 +353,10 @@ contract PredictionPoolTest is Test {
         pool.claim(trader1);
     }
 
+    // ──────────────────────────────────────────────
+    //  expire
+    // ──────────────────────────────────────────────
+
     function test_Expire_AfterDeadline() public {
         vm.warp(DEADLINE + 1);
 
@@ -369,6 +389,10 @@ contract PredictionPoolTest is Test {
         assertFalse(pool.isActive());
     }
 
+    // ──────────────────────────────────────────────
+    //  Pause / Unpause
+    // ──────────────────────────────────────────────
+
     function test_Pause() public {
         vm.prank(owner);
         pool.pause();
@@ -398,6 +422,10 @@ contract PredictionPoolTest is Test {
         pool.pause();
     }
 
+    // ──────────────────────────────────────────────
+    //  setOracleAdapter
+    // ──────────────────────────────────────────────
+
     function test_SetOracleAdapter() public {
         address newOracle = makeAddr("newOracle");
         vm.expectEmit(true, true, false, false);
@@ -424,6 +452,10 @@ contract PredictionPoolTest is Test {
         pool.settle(true);
         assertTrue(pool.isResolved());
     }
+
+    // ──────────────────────────────────────────────
+    //  Getters
+    // ──────────────────────────────────────────────
 
     function test_GetPoolInfo() public view {
         IPredictionPool.PoolInfo memory info = pool.getPoolInfo();
@@ -462,6 +494,10 @@ contract PredictionPoolTest is Test {
         assertTrue(pool.isResolved());
     }
 
+    // ──────────────────────────────────────────────
+    //  Fuzz
+    // ──────────────────────────────────────────────
+
     function testFuzz_BuyAndSettle(uint256 yesAmount, uint256 noAmount) public {
         vm.assume(yesAmount > 0.001 ether && yesAmount < 100 ether);
         vm.assume(noAmount > 0.001 ether && noAmount < 100 ether);
@@ -472,24 +508,25 @@ contract PredictionPoolTest is Test {
         vm.deal(alice, yesAmount);
         vm.deal(bob, noAmount);
 
-        vm.startPrank(alice);
+        vm.prank(alice);
         pool.buyPosition{value: yesAmount}(IPredictionPool.Side.YES, yesAmount);
-        vm.stopPrank();
 
-        vm.startPrank(bob);
+        vm.prank(bob);
         pool.buyPosition{value: noAmount}(IPredictionPool.Side.NO, noAmount);
-        vm.stopPrank();
 
         vm.prank(oracle);
         pool.settle(true); // YES wins
 
-        vm.startPrank(alice);
+        vm.prank(alice);
         uint256 payout = pool.claim(alice);
-        vm.stopPrank();
 
         uint256 totalPool = yesAmount + noAmount;
         assertEq(payout, (yesAmount * totalPool) / yesAmount);
     }
+
+    // ──────────────────────────────────────────────
+    //  Receive (reject direct ETH transfers)
+    // ──────────────────────────────────────────────
 
     receive() external payable {
         revert("Direct transfers not allowed");
