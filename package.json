@@ -1,23 +1,27 @@
 {
   "name": "guardai-be",
   "version": "0.1.0",
-  "private": true,
   "description": "Rug Radar — Backend API + AI Agent",
+  "private": true,
   "scripts": {
     "dev": "bun --watch src/main.ts",
     "build": "bun build src/main.ts --outdir dist",
     "start": "bun dist/main.js",
-    "test": "bun test",
-    "fmt": "bunx prettier --write 'src/**/*.ts'"
+    "fmt": "bunx prettier --write 'src/**/*.ts'",
+    "test": "bun test"
   },
   "dependencies": {
     "express": "^4.21.0",
+    "pg": "^8.11.5",
+    "reflect-metadata": "^0.2.2",
+    "typeorm": "^0.3.20",
     "viem": "^2.21.0",
     "zod": "^3.23.0"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",
     "@types/node": "^22.0.0",
+    "@types/pg": "^8.11.6",
     "prettier": "^3.4.0",
     "tsx": "^4.19.0",
     "typescript": "^5.6.0",
