@@ -192,7 +192,7 @@
             "type": "loki",
             "uid": "Loki"
           },
-          "expr": "{job=\"rugradar_backend_dev\"} |= \"\"",
+          "expr": "{job=~\"rugradar_backend_.*\"} |= \"\"",
           "refId": "A"
         }
       ],
