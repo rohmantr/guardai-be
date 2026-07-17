@@ -5,6 +5,11 @@ import {Test, console2} from "forge-std/Test.sol";
 import {ITreasury} from "../src/interfaces/ITreasury.sol";
 import {Treasury} from "../src/core/Treasury.sol";
 
+// ──────────────────────────────────────────────
+//  Helper contracts for security tests
+// ──────────────────────────────────────────────
+
+/// @dev Malicious contract that tries to re-enter Treasury.payout on ETH receive
 contract ReentrancyAttacker {
     Treasury public treasury;
     address public reenterTarget;
@@ -17,16 +22,19 @@ contract ReentrancyAttacker {
     }
 
     receive() external payable {
+        // Try to re-enter payout with a different target
         if (address(treasury).balance >= attackAmount) {
             treasury.payout(reenterTarget, attackAmount);
         }
     }
 
+    /// @notice Start the attack: send ETH to ourselves, triggering receive() which re-enters
     function attack() external {
         treasury.payout(address(this), attackAmount);
     }
 }
 
+/// @dev Contract that reverts on ETH receive
 contract RevertingReceiver {
     receive() external payable {
         revert("I reject ETH");
@@ -51,6 +59,10 @@ contract TreasuryTest is Test {
         vm.prank(owner);
         treasury = new Treasury();
     }
+
+    // ────────────────────────────────────────────
+    //  Registration
+    // ────────────────────────────────────────────
 
     function test_RegisterPool_success() public {
         vm.prank(owner);
@@ -82,6 +94,10 @@ contract TreasuryTest is Test {
         vm.expectRevert(ITreasury.PoolAlreadyRegistered.selector);
         treasury.registerPool(pool, poolId);
     }
+
+    // ────────────────────────────────────────────
+    //  Deposit
+    // ────────────────────────────────────────────
 
     function test_deposit_success() public {
         vm.prank(owner);
@@ -142,6 +158,10 @@ contract TreasuryTest is Test {
         // fee = 2.5 ETH, pool balance = 97.5 ETH
         assertEq(treasury.getBalance(poolId), 97.5 ether);
     }
+
+    // ────────────────────────────────────────────
+    //  Payout
+    // ────────────────────────────────────────────
 
     function test_payout_success() public {
         vm.prank(owner);
@@ -207,6 +227,10 @@ contract TreasuryTest is Test {
         assertEq(treasury.getBalance(poolId), 0);
     }
 
+    // ────────────────────────────────────────────
+    //  Withdraw Fees
+    // ────────────────────────────────────────────
+
     function test_withdrawFees_success() public {
         vm.prank(owner);
         treasury.registerPool(pool, poolId);
@@ -245,6 +269,10 @@ contract TreasuryTest is Test {
         treasury.withdrawFees(owner, 1 ether);
     }
 
+    // ────────────────────────────────────────────
+    //  Set Fee
+    // ────────────────────────────────────────────
+
     function test_setFeeBps_success() public {
         vm.prank(owner);
         vm.expectEmit(true, true, false, true);
@@ -275,6 +303,10 @@ contract TreasuryTest is Test {
         assertEq(treasury.feeBps(), 1000);
     }
 
+    // ────────────────────────────────────────────
+    //  getBalance
+    // ────────────────────────────────────────────
+
     function test_getBalance_returnsCorrectAmount() public {
         vm.prank(owner);
         treasury.registerPool(pool, poolId);
@@ -288,16 +320,20 @@ contract TreasuryTest is Test {
         assertEq(treasury.getBalance(poolId), 3 ether);
     }
 
+    // ────────────────────────────────────────────
+    //  Fuzz tests
+    // ────────────────────────────────────────────
+
     function testFuzz_deposit(uint256 amount, uint256 feeBps) public {
         feeBps = bound(feeBps, 0, 1000);
         amount = bound(amount, 0.001 ether, 1000 ether);
 
-        vm.prank(owner);
+        vm.startPrank(owner);
         treasury.registerPool(pool, poolId);
         if (feeBps > 0) {
-            vm.prank(owner);
             treasury.setFeeBps(feeBps);
         }
+        vm.stopPrank();
 
         uint256 expectedFee = (amount * feeBps) / 10000;
         uint256 expectedNet = amount - expectedFee;
@@ -315,8 +351,9 @@ contract TreasuryTest is Test {
         depositAmount = bound(depositAmount, 0.001 ether, 100 ether);
         payoutAmount = bound(payoutAmount, 0, depositAmount);
 
-        vm.prank(owner);
+        vm.startPrank(owner);
         treasury.registerPool(pool, poolId);
+        vm.stopPrank();
 
         vm.deal(pool, depositAmount);
         vm.prank(pool);
@@ -332,6 +369,10 @@ contract TreasuryTest is Test {
         assertEq(treasury.getBalance(poolId), depositAmount - payoutAmount);
     }
 
+    // ────────────────────────────────────────────
+    //  Security: Reentrancy
+    // ────────────────────────────────────────────
+
     function test_payout_reentrancyBlocked() public {
         ReentrancyAttacker attacker = new ReentrancyAttacker(treasury, winner, 1 ether);
 
@@ -345,11 +386,15 @@ contract TreasuryTest is Test {
         uint256 treasuryBefore = address(treasury).balance;
 
         vm.prank(address(attacker));
-        vm.expectRevert(); // ReentrancyGuard blocks the re-entrant call
+        vm.expectRevert();
         attacker.attack();
 
         assertEq(address(treasury).balance, treasuryBefore);
     }
+
+    // ────────────────────────────────────────────
+    //  Security: Transfer failure handling
+    // ────────────────────────────────────────────
 
     function test_payout_transferFailureHandledCleanly() public {
         RevertingReceiver receiver = new RevertingReceiver();
