@@ -16,11 +16,12 @@ interface ISettlementManager {
     event PoolRegistered(bytes32 indexed poolId, address indexed pool);
     event SettlementScheduled(bytes32 indexed poolId, uint256 deadline);
     event SettlementExecuted(bytes32 indexed poolId, bool outcome);
-    event SettlementFailed(bytes32 indexed poolId, string reason);
 
     error PoolNotFound();
+    error PoolAlreadyRegistered();
     error SettlementAlreadyScheduled();
     error SettlementNotReady();
     error InvalidOracleData();
     error ZeroAddress();
+    error AlreadyExecuted();
 }

@@ -32,7 +32,7 @@ contract SettlementManager is ISettlementManager, Ownable2Step {
     /// @custom:emits PoolRegistered
     function registerPool(bytes32 poolId, address pool) external onlyOwner {
         if (pool == address(0)) revert ZeroAddress();
-        if (_settlements[poolId].pool != address(0)) revert SettlementAlreadyScheduled();
+        if (_settlements[poolId].pool != address(0)) revert PoolAlreadyRegistered();
 
         _settlements[poolId].pool = pool;
         emit PoolRegistered(poolId, pool);
@@ -62,7 +62,7 @@ contract SettlementManager is ISettlementManager, Ownable2Step {
 
         SettlementInfo storage info = _settlements[poolId];
         if (info.pool == address(0)) revert PoolNotFound();
-        if (info.status != SettlementStatus.Pending) revert SettlementAlreadyScheduled();
+        if (info.status != SettlementStatus.Pending) revert AlreadyExecuted();
         if (block.timestamp < info.deadline) revert SettlementNotReady();
 
         info.status = SettlementStatus.Executed;
@@ -74,7 +74,8 @@ contract SettlementManager is ISettlementManager, Ownable2Step {
 
     /// @notice Gets the settlement status for a pool
     /// @param poolId Pool identifier
-    /// @return SettlementStatus enum
+    /// @return SettlementStatus enum. Returns Pending for unregistered pools (indistinguishable from registered-pending)
+    /// @custom:ponytail Add _registered mapping to differentiate unregistered vs pending when needed
     function getSettlementStatus(bytes32 poolId) external view returns (SettlementStatus) {
         if (_settlements[poolId].pool == address(0)) return SettlementStatus.Pending;
         return _settlements[poolId].status;

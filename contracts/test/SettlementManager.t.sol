@@ -22,7 +22,6 @@ contract SettlementManagerTest is Test {
     event PoolRegistered(bytes32 indexed poolId, address indexed pool);
     event SettlementScheduled(bytes32 indexed poolId, uint256 deadline);
     event SettlementExecuted(bytes32 indexed poolId, bool outcome);
-    event SettlementFailed(bytes32 indexed poolId, string reason);
 
     function setUp() public {
         vm.prank(owner);
@@ -62,7 +61,7 @@ contract SettlementManagerTest is Test {
         manager.registerPool(poolId, address(pool));
 
         vm.prank(owner);
-        vm.expectRevert(ISettlementManager.SettlementAlreadyScheduled.selector);
+        vm.expectRevert(ISettlementManager.PoolAlreadyRegistered.selector);
         manager.registerPool(poolId, address(pool));
     }
 
@@ -162,7 +161,7 @@ contract SettlementManagerTest is Test {
         manager.executeSettlement(poolId, true);
 
         vm.prank(oracle);
-        vm.expectRevert(ISettlementManager.SettlementAlreadyScheduled.selector);
+        vm.expectRevert(ISettlementManager.AlreadyExecuted.selector);
         manager.executeSettlement(poolId, true);
     }
 
@@ -235,6 +234,28 @@ contract SettlementManagerTest is Test {
         // 7. NO user claims nothing (losing side)
         vm.expectRevert(PredictionPool.NothingToClaim.selector);
         pool.claim(user2);
+    }
+
+    // ──────────────────────────────────────────────
+    //  Fuzz
+    // ──────────────────────────────────────────────
+
+    function testFuzz_executeSettlement(uint256 warpTime) public {
+        warpTime = bound(warpTime, settlementDeadline + 1, poolDeadline - 1);
+
+        _setupSettlement();
+
+        vm.deal(user, 10 ether);
+        vm.prank(user);
+        pool.buyPosition{value: 10 ether}(IPredictionPool.Side.YES, 10 ether);
+
+        vm.warp(warpTime);
+
+        vm.prank(oracle);
+        manager.executeSettlement(poolId, true);
+
+        assertTrue(pool.isResolved());
+        assertEq(uint256(manager.getSettlementStatus(poolId)), uint256(ISettlementManager.SettlementStatus.Executed));
     }
 
     // ──────────────────────────────────────────────
