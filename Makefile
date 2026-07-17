@@ -54,29 +54,29 @@ db-logs:
 	docker compose -f $(COMPOSE_FILE) logs -f postgres
 
 db-migrate:
-	DATABASE_URL=$(DATABASE_URL) bunx tsx ./node_modules/typeorm/cli.js migration:run -d src/common/database.ts
+	DATABASE_URL=$(DATABASE_URL) go -C backend run main.go -migrate-only
 
 db-rollback:
-	DATABASE_URL=$(DATABASE_URL) bunx tsx ./node_modules/typeorm/cli.js migration:revert -d src/common/database.ts
+	@echo "Rollback not supported for forward-only embedded migrations."
 
 db-status:
-	DATABASE_URL=$(DATABASE_URL) bunx tsx ./node_modules/typeorm/cli.js migration:show -d src/common/database.ts
+	@echo "Migration status check not supported. Migrations run automatically on startup."
 
 # --- Backend Targets (Local) ---
 be-dev:
-	DATABASE_URL=$(DATABASE_URL) bun dev
+	DATABASE_URL=$(DATABASE_URL) go -C backend run main.go
 
 be-build:
-	bun run build
+	go -C backend build -o bin/main main.go
 
 be-start:
-	DATABASE_URL=$(DATABASE_URL) bun start
+	DATABASE_URL=$(DATABASE_URL) ./backend/bin/main
 
 be-test:
-	DATABASE_URL=$(DATABASE_URL) bun test src/
+	DATABASE_URL=$(DATABASE_URL) go -C backend test -v ./...
 
 be-fmt:
-	bun run fmt
+	go -C backend fmt ./...
 
 # --- Staging / Dev Targets ---
 staging-up:
@@ -90,15 +90,13 @@ staging-logs:
 
 staging-migrate:
 	@if [ ! -f .env.dev ]; then echo "Error: .env.dev file not found! Copy .env.dev.example first."; exit 1; fi; \
-	DATABASE_URL=$$(grep -E "^DATABASE_URL=" .env.dev | cut -d '=' -f2-) bunx tsx ./node_modules/typeorm/cli.js migration:run -d src/common/database.ts
+	DATABASE_URL=$$(grep -E "^DATABASE_URL=" .env.dev | cut -d '=' -f2-) go -C backend run main.go -migrate-only
 
 staging-rollback:
-	@if [ ! -f .env.dev ]; then echo "Error: .env.dev file not found! Copy .env.dev.example first."; exit 1; fi; \
-	DATABASE_URL=$$(grep -E "^DATABASE_URL=" .env.dev | cut -d '=' -f2-) bunx tsx ./node_modules/typeorm/cli.js migration:revert -d src/common/database.ts
+	@echo "Rollback not supported for forward-only embedded migrations."
 
 staging-status:
-	@if [ ! -f .env.dev ]; then echo "Error: .env.dev file not found! Copy .env.dev.example first."; exit 1; fi; \
-	DATABASE_URL=$$(grep -E "^DATABASE_URL=" .env.dev | cut -d '=' -f2-) bunx tsx ./node_modules/typeorm/cli.js migration:show -d src/common/database.ts
+	@echo "Migration status check not supported. Migrations run automatically on startup."
 
 # --- Production Targets ---
 prod-up:
@@ -112,12 +110,10 @@ prod-logs:
 
 prod-migrate:
 	@if [ ! -f .env.prod ]; then echo "Error: .env.prod file not found! Copy .env.prod.example first."; exit 1; fi; \
-	DATABASE_URL=$$(grep -E "^DATABASE_URL=" .env.prod | cut -d '=' -f2-) bunx tsx ./node_modules/typeorm/cli.js migration:run -d src/common/database.ts
+	DATABASE_URL=$$(grep -E "^DATABASE_URL=" .env.prod | cut -d '=' -f2-) go -C backend run main.go -migrate-only
 
 prod-rollback:
-	@if [ ! -f .env.prod ]; then echo "Error: .env.prod file not found! Copy .env.prod.example first."; exit 1; fi; \
-	DATABASE_URL=$$(grep -E "^DATABASE_URL=" .env.prod | cut -d '=' -f2-) bunx tsx ./node_modules/typeorm/cli.js migration:revert -d src/common/database.ts
+	@echo "Rollback not supported for forward-only embedded migrations."
 
 prod-status:
-	@if [ ! -f .env.prod ]; then echo "Error: .env.prod file not found! Copy .env.prod.example first."; exit 1; fi; \
-	DATABASE_URL=$$(grep -E "^DATABASE_URL=" .env.prod | cut -d '=' -f2-) bunx tsx ./node_modules/typeorm/cli.js migration:show -d src/common/database.ts
+	@echo "Migration status check not supported. Migrations run automatically on startup."

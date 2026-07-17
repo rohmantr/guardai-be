@@ -1,16 +1,27 @@
-FROM oven/bun:1-alpine
+# Stage 1: Build the statically linked Go binary
+FROM golang:1.22-alpine AS builder
 
 WORKDIR /app
 
-# Install dependencies
-COPY package.json bun.lockb tsconfig.json ./
-RUN bun install --frozen-lockfile
+# Copy dependency files
+COPY backend/go.mod backend/go.sum ./
+RUN go mod download
 
-# Copy application source
-COPY . .
+# Copy backend source code
+COPY backend/ .
 
-# Expose port
+# Build the binary
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
+
+# Stage 2: Final minimal execution container
+FROM alpine:3.19
+
+RUN apk --no-cache add ca-certificates
+
+WORKDIR /app
+
+COPY --from=builder /app/main .
+
 EXPOSE 3000
 
-# Run the app directly using bun to support TS and dynamic imports
-CMD ["bun", "src/main.ts"]
+CMD ["./main"]

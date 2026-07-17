@@ -9,8 +9,11 @@ env:
   FOUNDRY_PROFILE: ci
  
 jobs:
-  check:
+  contracts-check:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: contracts
     steps:
       - uses: actions/checkout@v4
         with:
@@ -35,3 +38,50 @@ jobs:
  
       - name: Check gas snapshots
         run: forge snapshot --check
+
+  backend-check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: rugradar_dev
+          POSTGRES_USER: dev
+          POSTGRES_PASSWORD: dev
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache-dependency-path: backend/go.sum
+
+      - name: Check formatting
+        run: |
+          if [ -n "$(gofmt -l .)" ]; then
+            echo "Go code is not formatted:"
+            gofmt -d .
+            exit 1
+          fi
+
+      - name: Go Vet
+        run: go vet ./...
+
+      - name: Build
+        run: go build -o main main.go
+
+      - name: Run tests
+        env:
+          DATABASE_URL: postgresql://dev:dev@localhost:5432/rugradar_dev
+        run: go test -v ./...

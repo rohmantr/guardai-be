@@ -48,5 +48,59 @@ services:
       - "127.0.0.1:${REDIS_PORT:-6379}:6379"
     restart: always
 
+  # --- Monitoring Services (Production) ---
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: rugradar_prometheus_prod
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "127.0.0.1:9090:9090"
+    depends_on:
+      - backend
+    restart: always
+
+  loki:
+    image: grafana/loki:latest
+    container_name: rugradar_loki_prod
+    volumes:
+      - ./monitoring/loki/loki-config.yml:/etc/loki/local-config.yaml:ro
+    ports:
+      - "127.0.0.1:3100:3100"
+    restart: always
+
+  promtail:
+    image: grafana/promtail:latest
+    container_name: rugradar_promtail_prod
+    volumes:
+      - ./monitoring/promtail/promtail-config.yml:/etc/promtail/config.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    depends_on:
+      - loki
+    restart: always
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: rugradar_grafana_prod
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - ./monitoring/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./monitoring/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/grafana/provisioning/dashboards/rugradar-dashboard.json:/var/lib/grafana/dashboards/rugradar-dashboard.json:ro
+    ports:
+      - "3001:3000"
+    depends_on:
+      - prometheus
+      - loki
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
 volumes:
   pgdata_prod:
