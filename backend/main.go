@@ -21,14 +21,11 @@ import (
 )
 
 func main() {
-	// 1. Parse command-line flags
 	migrateOnly := flag.Bool("migrate-only", false, "Run database migrations and exit")
 	flag.Parse()
 
-	// 2. Load config
 	cfg := config.LoadConfig()
 
-	// 2. Set up slog JSON logger
 	var level slog.Level
 	switch strings.ToLower(cfg.LogLevel) {
 	case "debug":
@@ -45,7 +42,6 @@ func main() {
 	}))
 	slog.SetDefault(logger)
 
-	// 3. Initialize database connection pool
 	slog.Info("Initializing database connection...")
 	dbPool, err := db.Connect(cfg.DatabaseURL)
 	if err != nil {
@@ -55,7 +51,6 @@ func main() {
 	defer dbPool.Close()
 	slog.Info("Database connection pool initialized successfully.")
 
-	// 4. Run migrations
 	ctx := context.Background()
 	slog.Info("Running database migrations...")
 	if err := db.RunMigrations(ctx, dbPool); err != nil {
@@ -64,13 +59,11 @@ func main() {
 	}
 	slog.Info("Database migrations completed successfully.")
 
-	// If migrate-only flag is set, exit now
 	if *migrateOnly {
 		slog.Info("Migration-only run complete. Exiting.")
 		return
 	}
 
-	// 5. Set up HTTP router & handlers
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
@@ -88,7 +81,6 @@ func main() {
 
 	mux.Handle("GET /metrics", promhttp.Handler())
 
-	// Wrap mux with middleware chain
 	handler := middleware.Recovery(middleware.RequestLogger(middleware.PrometheusMetrics(mux)))
 
 	server := &http.Server{
@@ -99,7 +91,6 @@ func main() {
 		IdleTimeout:  30 * time.Second,
 	}
 
-	// 6. Start server in goroutine
 	go func() {
 		slog.Info("Starting HTTP server", slog.String("port", cfg.Port))
 		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
@@ -108,14 +99,12 @@ func main() {
 		}
 	}()
 
-	// 7. Graceful Shutdown Signal Interception
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 
 	<-stop
 	slog.Warn("Received shutdown signal. Starting graceful shutdown...")
 
-	// 8. Execute shutdown procedure with a 10s timeout
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -125,6 +114,5 @@ func main() {
 		slog.Info("HTTP server closed successfully.")
 	}
 
-	// dbPool.Close() is called via defer in main
 	slog.Info("Graceful shutdown complete.")
 }

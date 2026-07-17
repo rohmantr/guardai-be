@@ -16,7 +16,6 @@ import (
 var migrationFS embed.FS
 
 func RunMigrations(ctx context.Context, pool *pgxpool.Pool) error {
-	// 1. Create migrations tracking table if not exists
 	_, err := pool.Exec(ctx, `
 		CREATE TABLE IF NOT EXISTS go_migrations (
 			version VARCHAR(255) PRIMARY KEY,
@@ -27,7 +26,6 @@ func RunMigrations(ctx context.Context, pool *pgxpool.Pool) error {
 		return fmt.Errorf("failed to create migration table: %w", err)
 	}
 
-	// 2. Fetch already executed migrations
 	rows, err := pool.Query(ctx, "SELECT version FROM go_migrations")
 	if err != nil {
 		return fmt.Errorf("failed to fetch run migrations: %w", err)
@@ -43,13 +41,11 @@ func RunMigrations(ctx context.Context, pool *pgxpool.Pool) error {
 		runMigrations[version] = true
 	}
 
-	// 3. Read embedded SQL files
 	entries, err := fs.ReadDir(migrationFS, "migrations")
 	if err != nil {
 		return fmt.Errorf("failed to read migrations directory: %w", err)
 	}
 
-	// Sort files by name to ensure sequential execution
 	sort.Slice(entries, func(i, j int) bool {
 		return entries[i].Name() < entries[j].Name()
 	})
@@ -72,7 +68,6 @@ func RunMigrations(ctx context.Context, pool *pgxpool.Pool) error {
 			return fmt.Errorf("failed to read migration file %s: %w", name, err)
 		}
 
-		// Run migration within a transaction
 		tx, err := pool.Begin(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to begin transaction: %w", err)

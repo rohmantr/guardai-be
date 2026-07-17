@@ -14,7 +14,6 @@ func Connect(databaseURL string) (*pgxpool.Pool, error) {
 		return nil, fmt.Errorf("failed to parse database url: %w", err)
 	}
 
-	// Configure pool parameters
 	config.MaxConns = 10
 	config.MinConns = 2
 	config.MaxConnLifetime = 30 * time.Minute
@@ -28,7 +27,6 @@ func Connect(databaseURL string) (*pgxpool.Pool, error) {
 		return nil, fmt.Errorf("failed to create pool: %w", err)
 	}
 
-	// Ping database to verify connection
 	if err := pool.Ping(ctx); err != nil {
 		pool.Close()
 		return nil, fmt.Errorf("failed to ping database: %w", err)

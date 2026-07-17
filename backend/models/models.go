@@ -37,7 +37,7 @@ type PredictionPool struct {
 	ContractAddress string     `json:"contract_address" db:"contract_address"`
 	YesPoolAmount   string     `json:"yes_pool_amount" db:"yes_pool_amount"`
 	NoPoolAmount    string     `json:"no_pool_amount" db:"no_pool_amount"`
-	Status          string     `json:"status" db:"status"` // 'active', 'resolved', 'expired'
+	Status          string     `json:"status" db:"status"`
 	Deadline        time.Time  `json:"deadline" db:"deadline"`
 	CreatedAt       time.Time  `json:"created_at" db:"created_at"`
 	ResolvedAt      *time.Time `json:"resolved_at,omitempty" db:"resolved_at"`
@@ -47,7 +47,7 @@ type Position struct {
 	ID          string    `json:"id" db:"id"`
 	PoolID      string    `json:"pool_id" db:"pool_id"`
 	UserAddress string    `json:"user_address" db:"user_address"`
-	Side        string    `json:"side" db:"side"` // 'YES' / 'NO'
+	Side        string    `json:"side" db:"side"`
 	Amount      string    `json:"amount" db:"amount"`
 	Claimed     bool      `json:"claimed" db:"claimed"`
 	CreatedAt   time.Time `json:"created_at" db:"created_at"`
@@ -57,7 +57,7 @@ type ResolutionEvent struct {
 	ID              string    `json:"id" db:"id"`
 	PoolID          string    `json:"pool_id" db:"pool_id"`
 	LiquidityPulled bool      `json:"liquidity_pulled" db:"liquidity_pulled"`
-	WinningSide     string    `json:"winning_side" db:"winning_side"` // 'YES' / 'NO'
+	WinningSide     string    `json:"winning_side" db:"winning_side"`
 	TxHash          string    `json:"tx_hash" db:"tx_hash"`
 	ResolvedAt      time.Time `json:"resolved_at" db:"resolved_at"`
 }
