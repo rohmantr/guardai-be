@@ -17,7 +17,7 @@ func Connect(databaseURL string) (*pgxpool.Pool, error) {
 	// Configure pool parameters
 	config.MaxConns = 10
 	config.MinConns = 2
-	config.MaxConnMaxLifetime = 30 * time.Minute
+	config.MaxConnLifetime = 30 * time.Minute
 	config.MaxConnIdleTime = 15 * time.Minute
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
