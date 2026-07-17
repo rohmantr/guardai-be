@@ -30,7 +30,15 @@ func TestWriteError(t *testing.T) {
 	})
 
 	t.Run("Normal error in non-prod defaults to message", func(t *testing.T) {
+		oldNodeEnv := os.Getenv("NODE_ENV")
+		oldEnv := os.Getenv("ENV")
+		os.Setenv("NODE_ENV", "development")
 		os.Setenv("ENV", "dev")
+		defer func() {
+			os.Setenv("NODE_ENV", oldNodeEnv)
+			os.Setenv("ENV", oldEnv)
+		}()
+
 		rec := httptest.NewRecorder()
 		normalErr := errors.New("db disconnect issue")
 		WriteError(rec, normalErr)
@@ -48,7 +56,15 @@ func TestWriteError(t *testing.T) {
 	})
 
 	t.Run("Normal error in prod sanitizes to Internal Server Error", func(t *testing.T) {
+		oldNodeEnv := os.Getenv("NODE_ENV")
+		oldEnv := os.Getenv("ENV")
+		os.Setenv("NODE_ENV", "production")
 		os.Setenv("ENV", "prod")
+		defer func() {
+			os.Setenv("NODE_ENV", oldNodeEnv)
+			os.Setenv("ENV", oldEnv)
+		}()
+
 		rec := httptest.NewRecorder()
 		normalErr := errors.New("secret DB password leaked")
 		WriteError(rec, normalErr)
