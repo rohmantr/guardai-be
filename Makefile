@@ -31,15 +31,18 @@ clean:
 coverage:
 	cd contracts && forge coverage --report lcov
 
+# Docker Compose Configuration
+COMPOSE_FILE ?= docker-compose.local.yml
+
 # --- Database Targets ---
 db-up:
-	docker compose up -d
+	docker compose -f $(COMPOSE_FILE) up -d
 
 db-down:
-	docker compose down
+	docker compose -f $(COMPOSE_FILE) down
 
 db-logs:
-	docker compose logs -f postgres
+	docker compose -f $(COMPOSE_FILE) logs -f postgres
 
 db-migrate:
 	DATABASE_URL=$(DATABASE_URL) bunx tsx ./node_modules/typeorm/cli.js migration:run -d src/common/database.ts
