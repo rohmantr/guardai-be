@@ -5,7 +5,7 @@ import {
   OneToOne,
   JoinColumn,
 } from "typeorm";
-import { ResolutionEvent } from "../../oracle/entities/resolution-event.entity";
+import type { ResolutionEvent } from "../../oracle/entities/resolution-event.entity";
 
 @Entity({ name: "attestations" })
 export class Attestation {
@@ -15,9 +15,7 @@ export class Attestation {
   @Column({ type: "uuid", name: "pool_id", unique: true })
   poolId!: string;
 
-  @OneToOne(() => ResolutionEvent, (event) => event.attestation, {
-    onDelete: "CASCADE",
-  })
+  @OneToOne("ResolutionEvent", "attestation", { onDelete: "CASCADE" })
   @JoinColumn({ name: "pool_id", referencedColumnName: "poolId" })
   resolutionEvent!: ResolutionEvent;
 

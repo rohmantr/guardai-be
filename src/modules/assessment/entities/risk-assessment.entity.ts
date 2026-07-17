@@ -7,8 +7,8 @@ import {
   JoinColumn,
   OneToMany,
 } from "typeorm";
-import { Token } from "../../token/entities/token.entity";
-import { PredictionPool } from "../../prediction/entities/prediction-pool.entity";
+import type { Token } from "../../token/entities/token.entity";
+import type { PredictionPool } from "../../prediction/entities/prediction-pool.entity";
 
 @Entity({ name: "risk_assessments" })
 export class RiskAssessment {
@@ -18,7 +18,7 @@ export class RiskAssessment {
   @Column({ type: "uuid", name: "token_id" })
   tokenId!: string;
 
-  @ManyToOne(() => Token, (token) => token.assessments, { onDelete: "CASCADE" })
+  @ManyToOne("Token", "assessments", { onDelete: "CASCADE" })
   @JoinColumn({ name: "token_id" })
   token!: Token;
 
@@ -40,6 +40,6 @@ export class RiskAssessment {
   @CreateDateColumn({ type: "timestamptz", name: "created_at" })
   createdAt!: Date;
 
-  @OneToMany(() => PredictionPool, (pool) => pool.assessment)
+  @OneToMany("PredictionPool", "assessment")
   pools!: PredictionPool[];
 }

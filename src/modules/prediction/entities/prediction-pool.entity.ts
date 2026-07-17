@@ -8,10 +8,10 @@ import {
   OneToMany,
   OneToOne,
 } from "typeorm";
-import { Token } from "../../token/entities/token.entity";
-import { RiskAssessment } from "../../assessment/entities/risk-assessment.entity";
-import { Position } from "./position.entity";
-import { ResolutionEvent } from "../../oracle/entities/resolution-event.entity";
+import type { Token } from "../../token/entities/token.entity";
+import type { RiskAssessment } from "../../assessment/entities/risk-assessment.entity";
+import type { Position } from "./position.entity";
+import type { ResolutionEvent } from "../../oracle/entities/resolution-event.entity";
 
 @Entity({ name: "prediction_pools" })
 export class PredictionPool {
@@ -21,16 +21,14 @@ export class PredictionPool {
   @Column({ type: "uuid", name: "token_id" })
   tokenId!: string;
 
-  @ManyToOne(() => Token, (token) => token.pools, { onDelete: "CASCADE" })
+  @ManyToOne("Token", "pools", { onDelete: "CASCADE" })
   @JoinColumn({ name: "token_id" })
   token!: Token;
 
   @Column({ type: "uuid", name: "assessment_id" })
   assessmentId!: string;
 
-  @ManyToOne(() => RiskAssessment, (assessment) => assessment.pools, {
-    onDelete: "RESTRICT",
-  })
+  @ManyToOne("RiskAssessment", "pools", { onDelete: "RESTRICT" })
   @JoinColumn({ name: "assessment_id" })
   assessment!: RiskAssessment;
 
@@ -72,9 +70,9 @@ export class PredictionPool {
   @Column({ type: "timestamptz", name: "resolved_at", nullable: true })
   resolvedAt!: Date | null;
 
-  @OneToMany(() => Position, (position) => position.pool)
+  @OneToMany("Position", "pool")
   positions!: Position[];
 
-  @OneToOne(() => ResolutionEvent, (event) => event.pool)
+  @OneToOne("ResolutionEvent", "pool")
   resolutionEvent!: ResolutionEvent;
 }

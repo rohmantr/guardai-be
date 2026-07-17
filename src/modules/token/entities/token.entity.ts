@@ -6,8 +6,8 @@ import {
   UpdateDateColumn,
   OneToMany,
 } from "typeorm";
-import { RiskAssessment } from "../../assessment/entities/risk-assessment.entity";
-import { PredictionPool } from "../../prediction/entities/prediction-pool.entity";
+import type { RiskAssessment } from "../../assessment/entities/risk-assessment.entity";
+import type { PredictionPool } from "../../prediction/entities/prediction-pool.entity";
 
 @Entity({ name: "tokens" })
 export class Token {
@@ -53,9 +53,9 @@ export class Token {
   @UpdateDateColumn({ type: "timestamptz", name: "updated_at" })
   updatedAt!: Date;
 
-  @OneToMany(() => RiskAssessment, (assessment) => assessment.token)
+  @OneToMany("RiskAssessment", "token")
   assessments!: RiskAssessment[];
 
-  @OneToMany(() => PredictionPool, (pool) => pool.token)
+  @OneToMany("PredictionPool", "token")
   pools!: PredictionPool[];
 }

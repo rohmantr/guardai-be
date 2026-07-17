@@ -2,12 +2,11 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
-  ManyToOne,
   JoinColumn,
   OneToOne,
 } from "typeorm";
-import { PredictionPool } from "../../prediction/entities/prediction-pool.entity";
-import { Attestation } from "../../attestation/entities/attestation.entity";
+import type { PredictionPool } from "../../prediction/entities/prediction-pool.entity";
+import type { Attestation } from "../../attestation/entities/attestation.entity";
 
 @Entity({ name: "resolution_events" })
 export class ResolutionEvent {
@@ -17,9 +16,7 @@ export class ResolutionEvent {
   @Column({ type: "uuid", name: "pool_id", unique: true })
   poolId!: string;
 
-  @OneToOne(() => PredictionPool, (pool) => pool.resolutionEvent, {
-    onDelete: "CASCADE",
-  })
+  @OneToOne("PredictionPool", "resolutionEvent", { onDelete: "CASCADE" })
   @JoinColumn({ name: "pool_id" })
   pool!: PredictionPool;
 
@@ -39,6 +36,6 @@ export class ResolutionEvent {
   })
   resolvedAt!: Date;
 
-  @OneToOne(() => Attestation, (attestation) => attestation.resolutionEvent)
+  @OneToOne("Attestation", "resolutionEvent")
   attestation!: Attestation;
 }

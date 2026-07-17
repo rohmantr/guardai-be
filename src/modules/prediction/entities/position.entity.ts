@@ -6,7 +6,7 @@ import {
   ManyToOne,
   JoinColumn,
 } from "typeorm";
-import { PredictionPool } from "./prediction-pool.entity";
+import type { PredictionPool } from "./prediction-pool.entity";
 
 @Entity({ name: "positions" })
 export class Position {
@@ -16,9 +16,7 @@ export class Position {
   @Column({ type: "uuid", name: "pool_id" })
   poolId!: string;
 
-  @ManyToOne(() => PredictionPool, (pool) => pool.positions, {
-    onDelete: "CASCADE",
-  })
+  @ManyToOne("PredictionPool", "positions", { onDelete: "CASCADE" })
   @JoinColumn({ name: "pool_id" })
   pool!: PredictionPool;
 
