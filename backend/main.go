@@ -16,6 +16,8 @@ import (
 	"guardai-be/config"
 	"guardai-be/db"
 	"guardai-be/middleware"
+
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func main() {
@@ -84,8 +86,10 @@ func main() {
 		panic(errors.New("this is a simulated uncaught test error"))
 	})
 
+	mux.Handle("GET /metrics", promhttp.Handler())
+
 	// Wrap mux with middleware chain
-	handler := middleware.Recovery(middleware.RequestLogger(mux))
+	handler := middleware.Recovery(middleware.RequestLogger(middleware.PrometheusMetrics(mux)))
 
 	server := &http.Server{
 		Addr:         ":" + cfg.Port,
