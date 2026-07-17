@@ -171,21 +171,38 @@ error PoolExpired();
 
 ## 4. Treasury
 
+Kontrak vault yang mengelola dana protokol — menerima deposit dari `PredictionPool` yang terdaftar, melakukan payout ke pemenang, dan mengizinkan owner menarik fee.
+
+Pool identity di-binding via `registerPool` — `deposit()` dan `payout()` tidak menerima `poolId` dari luar, melainkan menurunkannya dari `msg.sender`.
+
 ### Functions
 
 ```solidity
-function deposit(bytes32 poolId) external payable;
+function registerPool(address pool, bytes32 poolId) external onlyOwner;
+function deposit() external payable;
 function payout(address winner, uint256 amount) external onlyPool;
 function withdrawFees(address to, uint256 amount) external onlyOwner;
+function setFeeBps(uint256 newFeeBps) external onlyOwner;
 function getBalance(bytes32 poolId) external view returns (uint256);
 ```
+
+| Function | Description |
+|----------|-------------|
+| `registerPool` | Daftarkan address pool + binding poolId (onlyOwner) |
+| `deposit` | Terima ETH, potong fee, catat balance pool (only registered pool) |
+| `payout` | Kirim ETH ke winner, kurangi balance pool (only registered pool) |
+| `withdrawFees` | Tarik akumulasi fee ke address tujuan (onlyOwner) |
+| `setFeeBps` | Set fee basis points, capped 1000 (10%) |
+| `getBalance` | Lihat balance per poolId |
 
 ### Events
 
 ```solidity
-event Deposited(bytes32 indexed poolId, uint256 amount);
+event PoolRegistered(address indexed pool, bytes32 indexed poolId);
+event Deposited(bytes32 indexed poolId, address indexed pool, uint256 amount);
 event PayoutSent(bytes32 indexed poolId, address indexed winner, uint256 amount);
 event FeesWithdrawn(address indexed to, uint256 amount);
+event FeeUpdated(uint256 newFeeBps);
 ```
 
 ### Custom Errors
@@ -194,6 +211,10 @@ event FeesWithdrawn(address indexed to, uint256 amount);
 error InsufficientBalance();
 error TransferFailed();
 error UnauthorizedPool();
+error FeeTooHigh();
+error ZeroAddress();
+error PoolAlreadyRegistered();
+error PoolNotRegistered();
 ```
 
 ---
