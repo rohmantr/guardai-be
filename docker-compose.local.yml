@@ -5,11 +5,11 @@ services:
     image: postgres:16-alpine
     container_name: rugradar_postgres_local
     environment:
-      POSTGRES_DB: rugradar_dev
-      POSTGRES_USER: dev
-      POSTGRES_PASSWORD: dev
+      POSTGRES_DB: ${POSTGRES_DB:-rugradar_dev}
+      POSTGRES_USER: ${POSTGRES_USER:-dev}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dev}
     ports:
-      - "5432:5432"
+      - "${DB_PORT:-5432}:5432"
     volumes:
       - pgdata_local:/var/lib/postgresql/data
     restart: unless-stopped
@@ -18,7 +18,7 @@ services:
     image: redis:7-alpine
     container_name: rugradar_redis_local
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT:-6379}:6379"
     restart: unless-stopped
 
   anvil:
@@ -26,7 +26,7 @@ services:
     container_name: rugradar_anvil_local
     entrypoint: ["anvil", "--host", "0.0.0.0", "--chain-id", "84532"]
     ports:
-      - "8545:8545"
+      - "${ANVIL_PORT:-8545}:8545"
     restart: unless-stopped
 
 volumes:

@@ -7,12 +7,17 @@ services:
       dockerfile: Dockerfile
     container_name: rugradar_backend_prod
     ports:
-      - "3000:3000"
+      - "${PORT:-3000}:3000"
     environment:
-      - NODE_ENV=production
-      - PORT=3000
-      - DATABASE_URL=postgresql://prod_user:prod_password@postgres:5432/rugradar_prod
-      - REDIS_URL=redis://redis:6379
+      - NODE_ENV=${NODE_ENV:-production}
+      - PORT=${PORT:-3000}
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - RPC_URL=${RPC_URL}
+      - LLM_API_KEY=${LLM_API_KEY}
+      - LLM_MODEL=${LLM_MODEL}
+      - EAS_CONTRACT_ADDRESS=${EAS_CONTRACT_ADDRESS}
+      - API_KEY_SALT=${API_KEY_SALT}
     depends_on:
       - postgres
       - redis
@@ -27,11 +32,11 @@ services:
     image: postgres:16-alpine
     container_name: rugradar_postgres_prod
     environment:
-      POSTGRES_DB: rugradar_prod
-      POSTGRES_USER: prod_user
-      POSTGRES_PASSWORD: prod_password
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
-      - "127.0.0.1:5432:5432"
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
     volumes:
       - pgdata_prod:/var/lib/postgresql/data
     restart: always
@@ -40,7 +45,7 @@ services:
     image: redis:7-alpine
     container_name: rugradar_redis_prod
     ports:
-      - "127.0.0.1:6379:6379"
+      - "127.0.0.1:${REDIS_PORT:-6379}:6379"
     restart: always
 
 volumes:

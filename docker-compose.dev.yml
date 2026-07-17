@@ -7,12 +7,17 @@ services:
       dockerfile: Dockerfile
     container_name: rugradar_backend_dev
     ports:
-      - "3000:3000"
+      - "${PORT:-3000}:3000"
     environment:
-      - NODE_ENV=development
-      - PORT=3000
-      - DATABASE_URL=postgresql://dev:dev@postgres:5432/rugradar_dev
-      - REDIS_URL=redis://redis:6379
+      - NODE_ENV=${NODE_ENV:-development}
+      - PORT=${PORT:-3000}
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - RPC_URL=${RPC_URL}
+      - LLM_API_KEY=${LLM_API_KEY}
+      - LLM_MODEL=${LLM_MODEL}
+      - EAS_CONTRACT_ADDRESS=${EAS_CONTRACT_ADDRESS}
+      - API_KEY_SALT=${API_KEY_SALT}
     depends_on:
       - postgres
       - redis
@@ -22,11 +27,11 @@ services:
     image: postgres:16-alpine
     container_name: rugradar_postgres_dev
     environment:
-      POSTGRES_DB: rugradar_dev
-      POSTGRES_USER: dev
-      POSTGRES_PASSWORD: dev
+      POSTGRES_DB: ${POSTGRES_DB:-rugradar_dev}
+      POSTGRES_USER: ${POSTGRES_USER:-dev}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dev}
     ports:
-      - "5432:5432"
+      - "${DB_PORT:-5432}:5432"
     volumes:
       - pgdata_dev:/var/lib/postgresql/data
     restart: unless-stopped
@@ -35,7 +40,7 @@ services:
     image: redis:7-alpine
     container_name: rugradar_redis_dev
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT:-6379}:6379"
     restart: unless-stopped
 
 volumes:
