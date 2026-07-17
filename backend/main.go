@@ -90,6 +90,22 @@ func main() {
 	mux.HandleFunc("GET /api/v1/tokens/{address}", tokenCtrl.GetTokenByAddress)
 	mux.HandleFunc("GET /api/v1/tokens/{address}/assessments", tokenCtrl.GetAssessmentsByAddress)
 
+	mux.HandleFunc("GET /api/v1/docs", func(w http.ResponseWriter, r *http.Request) {
+		data, err := os.ReadFile("docs/architecture/api-spec.md")
+		if err != nil {
+			data, err = os.ReadFile("../docs/architecture/api-spec.md")
+		}
+		if err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotFound)
+			_ = json.NewEncoder(w).Encode(map[string]string{"error": "Documentation not found"})
+			return
+		}
+		w.Header().Set("Content-Type", "text/markdown; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(data)
+	})
+
 	handler := middleware.Recovery(middleware.RequestLogger(middleware.PrometheusMetrics(mux)))
 
 	server := &http.Server{

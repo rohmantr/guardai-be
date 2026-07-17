@@ -1,108 +1,222 @@
-# Rug Radar — API Specification
+# Rug Radar Backend API Specification
 
-**Versi:** 1.0
-**Tanggal:** 13 Juli 2026
+**Version:** 1.0.0
+**Base URL (Production):** `https://api.rugradar.ai/api/v1`
+**Base URL (Staging):** `https://staging-api.rugradar.ai/api/v1`
 
----
+## Overview
 
-## Conventions
+Dokumentasi API untuk Modul Token dari Rug Radar. Modul ini bertanggung jawab untuk mendeteksi token baru, membaca bytecode on-chain, mendeteksi fungsi berisiko (seperti unlimited mint dan blacklist), dan mengelola riwayat penilaian risiko (risk assessments) berbasis kecerdasan buatan. API ini digunakan oleh frontend klien, bot monitoring, dan agen AI dalam ekosistem Rug Radar.
 
-- **Base URL:** `/api/v1`
-- **Format:** JSON
-- **Method:** RESTful (GET, POST, PUT/PATCH)
-- **Case:** snake_case untuk field JSON
-- **Time:** ISO 8601 UTC
+## Format Error
 
-## Standard Response Format
+Semua response gagal memakai format yang seragam dari middleware error backend:
+
+```json
+{
+  "status": "error",
+  "message": "Pesan error yang jelas dan actionable",
+  "code": "ERROR_CODE_SNAKE_CASE"
+}
+```
+
+| HTTP Status | Kode Error (`code`) | Kapan Dipakai |
+|---|---|---|
+| `400` | `INVALID_ADDRESS` | Format alamat ethereum tidak valid |
+| `404` | `TOKEN_NOT_FOUND` | Token dengan alamat tersebut tidak ditemukan |
+| `500` | `INTERNAL_SERVER_ERROR` | Terjadi kesalahan pada server internal |
+
+## Pagination
+
+Endpoint list mendukung parameter paginasi berikut:
+
+| Parameter | Tipe | Default | Keterangan |
+|---|---|---|---|
+| `page` | integer | `1` | Nomor halaman yang ingin diambil |
+| `limit` | integer | `20` | Batas maksimum token per halaman (maksimum `100`) |
+| `search` | string | `""` | Pencarian substring alamat token (case-insensitive) |
+
+Response list menyertakan objek `meta` untuk metadata paginasi:
 
 ```json
 {
   "success": true,
-  "data": { ... },
+  "data": [ /* ... */ ],
   "meta": {
     "page": 1,
     "limit": 20,
-    "total": 100
+    "total": 12
   }
 }
 ```
 
-## Error Format
-
-```json
-{
-  "success": false,
-  "error": {
-    "code": "TOKEN_NOT_FOUND",
-    "message": "Token with address 0x... not found",
-    "details": {}
-  }
-}
-```
-
-Error codes: `Uppercase_Snake_Case` yang mendeskripsikan error.
-
-## Pagination
-
-- **Parameter:** `?page=1&limit=20`
-- **Default:** page=1, limit=20
-- **Max:** limit=100
-- **Response:** meta object dengan page, limit, total
-
-## Authentication
-
-- **Method:** API Key via header `X-API-Key`
-- **Scope:** Key terikat ke alamat wallet (EIP-4361 sign-in)
-- **Rate limit:** 100 req/min per key (unauthenticated: 10 req/min)
-
-## API Versioning
-
-- **Path-based:** `/api/v1/...`
-- **Header-based fallback:** `Accept: application/vnd.rugradar.v1+json`
-- **Deprecation:** Header `Sunset` dan `Deprecation` pada response endpoint lama
+---
 
 ## Endpoints
 
 ### Tokens
 
-| Method | Path | Deskripsi |
-|--------|------|-----------|
-| GET | /tokens | List token dengan filtering |
-| GET | /tokens/:address | Detail token + assessment terbaru |
-| GET | /tokens/:address/assessments | Riwayat assessment token |
+#### `GET /tokens`
 
-### Assessments
+Daftar semua token yang terdeteksi di dalam database dengan paginasi dan filter pencarian.
 
-| Method | Path | Deskripsi |
-|--------|------|-----------|
-| GET | /assessments/:id | Detail assessment |
-| POST | /assessments | Trigger assessment manual |
+**Query Parameters**
 
-### Pools
+| Nama | Tipe | Wajib | Keterangan |
+|---|---|---|---|
+| `page` | integer | Tidak | Lihat bagian Pagination |
+| `limit` | integer | Tidak | Lihat bagian Pagination |
+| `search` | string | Tidak | Kata kunci pencarian alamat token |
 
-| Method | Path | Deskripsi |
-|--------|------|-----------|
-| GET | /pools | List prediction pools |
-| GET | /pools/:id | Detail pool (odds, volume, status) |
-| POST | /pools/:id/positions | Beli posisi (signature-based) |
+**Response `200`**
 
-### Positions
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "1a3e5c7d-8b9a-4c2d-9e0f-1a2b3c4d5e6f",
+      "address": "0x1234567890123456789012345678901234567890",
+      "chain_id": 8453,
+      "deployer": "0x9876543210987654321098765432109876543210",
+      "deployed_at": "2026-07-17T15:00:00Z",
+      "has_unlimited_mint": false,
+      "has_blacklist": true,
+      "has_tax": false,
+      "liquidity_locked": null,
+      "top_holder_concentration": null,
+      "created_at": "2026-07-17T15:00:05Z",
+      "updated_at": "2026-07-17T15:00:05Z"
+    }
+  ],
+  "meta": {
+    "page": 1,
+    "limit": 20,
+    "total": 1
+  }
+}
+```
 
-| Method | Path | Deskripsi |
-|--------|------|-----------|
-| GET | /positions | List posisi user |
-| GET | /positions/:id | Detail posisi |
+**Error Responses:** `500`
 
-### Stats
+---
 
-| Method | Path | Deskripsi |
-|--------|------|-----------|
-| GET | /stats/overview | Ringkasan platform |
-| GET | /stats/accuracy | Track record akurasi agent |
+#### `GET /tokens/{address}`
 
-## Endpoint Naming Rules
+Mengambil detail satu token beserta penilaian risiko (`latest_assessment`) terbaru berdasarkan alamat token.
 
-1. **Plural nouns** untuk collections: `/tokens`, `/pools`
-2. **Nested** untuk relasi: `/tokens/:address/assessments`
-3. **No verbs** di path: gunakan POST untuk aksi, bukan `/createToken`
-4. **Consistent params:** filter via query string, sort via `?sort=field:asc`
+**Path Parameters**
+
+| Nama | Tipe | Keterangan |
+|---|---|---|
+| `address` | string | Alamat ethereum token (format `0x` diikuti oleh 40 karakter heksadesimal) |
+
+**Response `200`**
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "1a3e5c7d-8b9a-4c2d-9e0f-1a2b3c4d5e6f",
+    "address": "0x1234567890123456789012345678901234567890",
+    "chain_id": 8453,
+    "deployer": "0x9876543210987654321098765432109876543210",
+    "deployed_at": "2026-07-17T15:00:00Z",
+    "has_unlimited_mint": false,
+    "has_blacklist": true,
+    "has_tax": false,
+    "liquidity_locked": true,
+    "top_holder_concentration": 0.4500,
+    "created_at": "2026-07-17T15:00:05Z",
+    "updated_at": "2026-07-17T15:00:05Z",
+    "latest_assessment": {
+      "id": "2b4f6d8e-9c0a-5d3e-0f1a-2b3c4d5e6f7a",
+      "token_id": "1a3e5c7d-8b9a-4c2d-9e0f-1a2b3c4d5e6f",
+      "probability": 0.8500,
+      "reasoning": "Token contains blacklist capabilities which allow the deployer to freeze funds at any time.",
+      "confidence": 0.9000,
+      "llm_model": "gpt-4o-mini",
+      "assessed_at": "2026-07-17T15:05:00Z",
+      "created_at": "2026-07-17T15:05:01Z"
+    }
+  }
+}
+```
+
+**Error Responses:**
+
+* **`400 Bad Request`** — Format address salah.
+  ```json
+  {
+    "status": "error",
+    "message": "Invalid ethereum address format",
+    "code": "INVALID_ADDRESS"
+  }
+  ```
+* **`404 Not Found`** — Token tidak terdaftar.
+  ```json
+  {
+    "status": "error",
+    "message": "Token not found",
+    "code": "TOKEN_NOT_FOUND"
+  }
+  ```
+
+---
+
+#### `GET /tokens/{address}/assessments`
+
+Mengambil daftar seluruh riwayat penilaian risiko (risk assessments) untuk token tertentu diurutkan dari yang paling baru.
+
+**Path Parameters**
+
+| Nama | Tipe | Keterangan |
+|---|---|---|
+| `address` | string | Alamat ethereum token |
+
+**Response `200`**
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "2b4f6d8e-9c0a-5d3e-0f1a-2b3c4d5e6f7a",
+      "token_id": "1a3e5c7d-8b9a-4c2d-9e0f-1a2b3c4d5e6f",
+      "probability": 0.8500,
+      "reasoning": "Token contains blacklist capabilities which allow the deployer to freeze funds at any time.",
+      "confidence": 0.9000,
+      "llm_model": "gpt-4o-mini",
+      "assessed_at": "2026-07-17T15:05:00Z",
+      "created_at": "2026-07-17T15:05:01Z"
+    }
+  ]
+}
+```
+
+**Error Responses:**
+
+* **`400 Bad Request`** — Format address salah.
+  ```json
+  {
+    "status": "error",
+    "message": "Invalid ethereum address format",
+    "code": "INVALID_ADDRESS"
+  }
+  ```
+* **`404 Not Found`** — Token tidak ditemukan.
+  ```json
+  {
+    "status": "error",
+    "message": "Token not found",
+    "code": "TOKEN_NOT_FOUND"
+  }
+  ```
+
+---
+
+## Changelog
+
+| Versi | Tanggal | Perubahan |
+|---|---|---|
+| 1.0.0 | 2026-07-17 | Inisialisasi awal dokumentasi API Modul Token berbasis Go |
