@@ -43,7 +43,7 @@ func WriteError(w http.ResponseWriter, err error) {
 	}
 
 	w.WriteHeader(http.StatusInternalServerError)
-	
+
 	message := "Internal Server Error"
 	// Check both NODE_ENV and ENV to be safe
 	env := os.Getenv("NODE_ENV")
