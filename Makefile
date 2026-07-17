@@ -13,7 +13,9 @@ COMPOSE_FILE ?= docker-compose.local.yml
 
 .PHONY: build test test-all test-pp test-tr fmt check clean coverage \
 	db-up db-down db-logs db-migrate db-rollback db-status \
-	be-dev be-build be-start be-test be-fmt
+	be-dev be-build be-start be-test be-fmt \
+	staging-up staging-down staging-logs staging-migrate staging-rollback staging-status \
+	prod-up prod-down prod-logs prod-migrate prod-rollback prod-status
 
 # --- Smart Contract Targets ---
 build:
@@ -41,7 +43,7 @@ clean:
 coverage:
 	cd contracts && forge coverage --report lcov
 
-# --- Database Targets ---
+# --- Database Targets (Local) ---
 db-up:
 	docker compose -f $(COMPOSE_FILE) up -d
 
@@ -60,7 +62,7 @@ db-rollback:
 db-status:
 	DATABASE_URL=$(DATABASE_URL) bunx tsx ./node_modules/typeorm/cli.js migration:show -d src/common/database.ts
 
-# --- Backend Targets ---
+# --- Backend Targets (Local) ---
 be-dev:
 	DATABASE_URL=$(DATABASE_URL) bun dev
 
@@ -75,3 +77,47 @@ be-test:
 
 be-fmt:
 	bun run fmt
+
+# --- Staging / Dev Targets ---
+staging-up:
+	docker compose --env-file .env.dev -f docker-compose.dev.yml up -d
+
+staging-down:
+	docker compose --env-file .env.dev -f docker-compose.dev.yml down
+
+staging-logs:
+	docker compose --env-file .env.dev -f docker-compose.dev.yml logs -f backend
+
+staging-migrate:
+	@if [ ! -f .env.dev ]; then echo "Error: .env.dev file not found! Copy .env.dev.example first."; exit 1; fi; \
+	DATABASE_URL=$$(grep -E "^DATABASE_URL=" .env.dev | cut -d '=' -f2-) bunx tsx ./node_modules/typeorm/cli.js migration:run -d src/common/database.ts
+
+staging-rollback:
+	@if [ ! -f .env.dev ]; then echo "Error: .env.dev file not found! Copy .env.dev.example first."; exit 1; fi; \
+	DATABASE_URL=$$(grep -E "^DATABASE_URL=" .env.dev | cut -d '=' -f2-) bunx tsx ./node_modules/typeorm/cli.js migration:revert -d src/common/database.ts
+
+staging-status:
+	@if [ ! -f .env.dev ]; then echo "Error: .env.dev file not found! Copy .env.dev.example first."; exit 1; fi; \
+	DATABASE_URL=$$(grep -E "^DATABASE_URL=" .env.dev | cut -d '=' -f2-) bunx tsx ./node_modules/typeorm/cli.js migration:show -d src/common/database.ts
+
+# --- Production Targets ---
+prod-up:
+	docker compose --env-file .env.prod -f docker-compose.prod.yml up -d
+
+prod-down:
+	docker compose --env-file .env.prod -f docker-compose.prod.yml down
+
+prod-logs:
+	docker compose --env-file .env.prod -f docker-compose.prod.yml logs -f backend
+
+prod-migrate:
+	@if [ ! -f .env.prod ]; then echo "Error: .env.prod file not found! Copy .env.prod.example first."; exit 1; fi; \
+	DATABASE_URL=$$(grep -E "^DATABASE_URL=" .env.prod | cut -d '=' -f2-) bunx tsx ./node_modules/typeorm/cli.js migration:run -d src/common/database.ts
+
+prod-rollback:
+	@if [ ! -f .env.prod ]; then echo "Error: .env.prod file not found! Copy .env.prod.example first."; exit 1; fi; \
+	DATABASE_URL=$$(grep -E "^DATABASE_URL=" .env.prod | cut -d '=' -f2-) bunx tsx ./node_modules/typeorm/cli.js migration:revert -d src/common/database.ts
+
+prod-status:
+	@if [ ! -f .env.prod ]; then echo "Error: .env.prod file not found! Copy .env.prod.example first."; exit 1; fi; \
+	DATABASE_URL=$$(grep -E "^DATABASE_URL=" .env.prod | cut -d '=' -f2-) bunx tsx ./node_modules/typeorm/cli.js migration:show -d src/common/database.ts
