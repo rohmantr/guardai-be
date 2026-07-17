@@ -18,4 +18,5 @@ interface IOracleAdapter {
     error AlreadyResolved();
     error InvalidProof();
     error NotTrustedRelayer();
+    error PoolExpired();
 }

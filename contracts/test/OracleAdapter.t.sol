@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {Test, console2} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {IOracleAdapter} from "../src/interfaces/IOracleAdapter.sol";
 import {OracleAdapter} from "../src/oracle/OracleAdapter.sol";
 
