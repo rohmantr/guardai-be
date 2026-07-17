@@ -16,6 +16,7 @@ import (
 	"guardai-be/config"
 	"guardai-be/db"
 	"guardai-be/middleware"
+	"guardai-be/token"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -64,6 +65,10 @@ func main() {
 		return
 	}
 
+	tokenRepo := token.NewRepository(dbPool)
+	tokenService := token.NewService(tokenRepo, cfg.RPCURL)
+	tokenCtrl := token.NewController(tokenService)
+
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
@@ -80,6 +85,10 @@ func main() {
 	})
 
 	mux.Handle("GET /metrics", promhttp.Handler())
+
+	mux.HandleFunc("GET /api/v1/tokens", tokenCtrl.ListTokens)
+	mux.HandleFunc("GET /api/v1/tokens/{address}", tokenCtrl.GetTokenByAddress)
+	mux.HandleFunc("GET /api/v1/tokens/{address}/assessments", tokenCtrl.GetAssessmentsByAddress)
 
 	handler := middleware.Recovery(middleware.RequestLogger(middleware.PrometheusMetrics(mux)))
 
