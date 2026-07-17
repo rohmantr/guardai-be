@@ -90,18 +90,40 @@ func main() {
 	mux.HandleFunc("GET /api/v1/tokens/{address}", tokenCtrl.GetTokenByAddress)
 	mux.HandleFunc("GET /api/v1/tokens/{address}/assessments", tokenCtrl.GetAssessmentsByAddress)
 
-	mux.HandleFunc("GET /api/v1/docs", func(w http.ResponseWriter, r *http.Request) {
-		data, err := os.ReadFile("docs/architecture/api-spec.md")
+	mux.HandleFunc("GET /api/v1/swagger/doc.json", func(w http.ResponseWriter, r *http.Request) {
+		data, err := os.ReadFile("docs/swagger.json")
 		if err != nil {
-			data, err = os.ReadFile("../docs/architecture/api-spec.md")
+			data, err = os.ReadFile("../docs/swagger.json")
+		}
+		if err != nil {
+			data, err = os.ReadFile("backend/docs/swagger.json")
 		}
 		if err != nil {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusNotFound)
-			_ = json.NewEncoder(w).Encode(map[string]string{"error": "Documentation not found"})
+			_ = json.NewEncoder(w).Encode(map[string]string{"error": "swagger.json not found"})
 			return
 		}
-		w.Header().Set("Content-Type", "text/markdown; charset=utf-8")
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(data)
+	})
+
+	mux.HandleFunc("GET /api/v1/swagger/", func(w http.ResponseWriter, r *http.Request) {
+		data, err := os.ReadFile("docs/swagger-ui.html")
+		if err != nil {
+			data, err = os.ReadFile("../docs/swagger-ui.html")
+		}
+		if err != nil {
+			data, err = os.ReadFile("backend/docs/swagger-ui.html")
+		}
+		if err != nil {
+			w.Header().Set("Content-Type", "text/plain")
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte("swagger-ui.html not found"))
+			return
+		}
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write(data)
 	})

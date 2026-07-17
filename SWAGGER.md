@@ -1,51 +1,64 @@
-# Rug Radar Token Module API Documentation
+# [Nama Service] API Documentation
 
 **Version:** 1.0.0
-**Base URL (Production):** `https://api.rugradar.ai/api/v1`
-**Base URL (Staging):** `https://staging-api.rugradar.ai/api/v1`
+**Base URL (Production):** `https://api.[domain].com/v1`
+**Base URL (Staging):** `https://staging-api.[domain].com/v1`
 
 ## Overview
 
-Dokumentasi API untuk Modul Token dari Rug Radar. Modul ini bertanggung jawab untuk mendeteksi token baru, membaca bytecode on-chain, mendeteksi fungsi berisiko (seperti unlimited mint dan blacklist), dan mengelola riwayat penilaian risiko (risk assessments) berbasis kecerdasan buatan. API ini digunakan oleh frontend klien, bot monitoring, dan agen AI dalam ekosistem Rug Radar.
+[Deskripsi singkat: apa fungsi service ini, siapa konsumennya — frontend, agent lain, integrasi pihak ketiga]
+
+## Authentication
+
+Semua request (kecuali disebutkan lain) butuh header berikut:
+
+```
+X-API-Key: <api-key-kamu>
+```
+
+Request tanpa API key atau dengan key tidak valid akan mendapat `401 Unauthorized`.
 
 ## Format Error
 
-Semua response gagal memakai format yang seragam dari middleware error backend:
+Semua response gagal memakai format yang seragam:
 
 ```json
 {
-  "status": "error",
-  "message": "Pesan error yang jelas dan actionable",
-  "code": "ERROR_CODE_SNAKE_CASE"
+  "error": {
+    "code": "ERROR_CODE_SNAKE_CASE",
+    "message": "Pesan error yang jelas dan actionable",
+    "details": {}
+  }
 }
 ```
 
-| HTTP Status | Kode Error (`code`) | Kapan Dipakai |
-|---|---|---|
-| `400` | `INVALID_ADDRESS` | Format alamat ethereum tidak valid |
-| `404` | `TOKEN_NOT_FOUND` | Token dengan alamat tersebut tidak ditemukan |
-| `500` | `INTERNAL_SERVER_ERROR` | Terjadi kesalahan pada server internal |
+| HTTP Status | Kapan Dipakai |
+|---|---|
+| `400` | Input tidak valid — format salah atau field wajib hilang |
+| `401` | Autentikasi gagal atau tidak ada |
+| `404` | Resource tidak ditemukan |
+| `422` | Validasi gagal pada field tertentu (lihat `details`) |
+| `429` | Terlalu banyak request dalam periode waktu tertentu |
+| `500` | Kesalahan server internal — detail internal tidak di-expose ke client |
 
 ## Pagination
 
-Endpoint list mendukung parameter paginasi berikut:
+Endpoint yang mengembalikan list mendukung parameter berikut:
 
 | Parameter | Tipe | Default | Keterangan |
 |---|---|---|---|
-| `page` | integer | `1` | Nomor halaman yang ingin diambil |
-| `limit` | integer | `20` | Batas maksimum token per halaman (maksimum `100`) |
-| `search` | string | `""` | Pencarian substring alamat token (case-insensitive) |
+| `page` | integer | `1` | Halaman ke berapa |
+| `pageSize` | integer | `20` | Maksimum `100` |
 
-Response list menyertakan objek `meta` untuk metadata paginasi:
+Response list selalu menyertakan objek `pagination`:
 
 ```json
 {
-  "success": true,
   "data": [ /* ... */ ],
-  "meta": {
+  "pagination": {
     "page": 1,
-    "limit": 20,
-    "total": 12
+    "pageSize": 20,
+    "totalItems": 100
   }
 }
 ```
@@ -54,164 +67,122 @@ Response list menyertakan objek `meta` untuk metadata paginasi:
 
 ## Endpoints
 
-### Tokens
+### [Nama Resource]
 
-#### `GET /tokens`
+#### `GET /[resource]`
 
-Daftar semua token yang terdeteksi di dalam database dengan paginasi dan filter pencarian.
+[Ringkasan singkat 1 baris — contoh: Daftar semua [resource]]
+
+[Deskripsi lebih detail: kapan dipakai, catatan behavior khusus]
 
 **Query Parameters**
 
 | Nama | Tipe | Wajib | Keterangan |
 |---|---|---|---|
+| `[queryParamName]` | string | Tidak | [Deskripsi parameter, contoh nilai valid] |
 | `page` | integer | Tidak | Lihat bagian Pagination |
-| `limit` | integer | Tidak | Lihat bagian Pagination |
-| `search` | string | Tidak | Kata kunci pencarian alamat token |
+| `pageSize` | integer | Tidak | Lihat bagian Pagination |
 
 **Response `200`**
 
 ```json
 {
-  "success": true,
   "data": [
     {
-      "id": "1a3e5c7d-8b9a-4c2d-9e0f-1a2b3c4d5e6f",
-      "address": "0x1234567890123456789012345678901234567890",
-      "chain_id": 8453,
-      "deployer": "0x9876543210987654321098765432109876543210",
-      "deployed_at": "2026-07-17T15:00:00Z",
-      "has_unlimited_mint": false,
-      "has_blacklist": true,
-      "has_tax": false,
-      "liquidity_locked": null,
-      "top_holder_concentration": null,
-      "created_at": "2026-07-17T15:00:05Z",
-      "updated_at": "2026-07-17T15:00:05Z"
+      "id": "[contoh-id]",
+      "[field1]": "[contoh nilai]",
+      "createdAt": "2026-07-17T10:00:00Z"
     }
   ],
-  "meta": {
-    "page": 1,
-    "limit": 20,
-    "total": 1
-  }
+  "pagination": { "page": 1, "pageSize": 20, "totalItems": 100 }
 }
 ```
 
-**Error Responses:** `500`
+**Error Responses:** `400`, `401`, `429`, `500` — lihat format umum di atas.
 
 ---
 
-#### `GET /tokens/{address}`
+#### `POST /[resource]`
 
-Mengambil detail satu token beserta penilaian risiko (`latest_assessment`) terbaru berdasarkan alamat token.
+[Ringkasan singkat — contoh: Buat [resource] baru]
+
+**Request Body**
+
+```json
+{
+  "[field1]": "[nilai wajib]"
+}
+```
+
+| Field | Tipe | Wajib | Keterangan |
+|---|---|---|---|
+| `[field1]` | string | Ya | [Deskripsi field] |
+
+**Response `201`**
+
+```json
+{
+  "id": "[contoh-id]",
+  "[field1]": "[contoh nilai]",
+  "createdAt": "2026-07-17T10:00:00Z"
+}
+```
+
+**Error Responses:** `400`, `401`, `422` — lihat format umum di atas.
+
+---
+
+#### `GET /[resource]/{id}`
+
+[Ambil satu [resource] berdasarkan id]
 
 **Path Parameters**
 
 | Nama | Tipe | Keterangan |
 |---|---|---|
-| `address` | string | Alamat ethereum token (format `0x` diikuti oleh 40 karakter heksadesimal) |
+| `id` | string | [Deskripsi format id — contoh: address 0x..., UUID, dsb] |
 
 **Response `200`**
 
 ```json
 {
-  "success": true,
-  "data": {
-    "id": "1a3e5c7d-8b9a-4c2d-9e0f-1a2b3c4d5e6f",
-    "address": "0x1234567890123456789012345678901234567890",
-    "chain_id": 8453,
-    "deployer": "0x9876543210987654321098765432109876543210",
-    "deployed_at": "2026-07-17T15:00:00Z",
-    "has_unlimited_mint": false,
-    "has_blacklist": true,
-    "has_tax": false,
-    "liquidity_locked": true,
-    "top_holder_concentration": 0.4500,
-    "created_at": "2026-07-17T15:00:05Z",
-    "updated_at": "2026-07-17T15:00:05Z",
-    "latest_assessment": {
-      "id": "2b4f6d8e-9c0a-5d3e-0f1a-2b3c4d5e6f7a",
-      "token_id": "1a3e5c7d-8b9a-4c2d-9e0f-1a2b3c4d5e6f",
-      "probability": 0.8500,
-      "reasoning": "Token contains blacklist capabilities which allow the deployer to freeze funds at any time.",
-      "confidence": 0.9000,
-      "llm_model": "gpt-4o-mini",
-      "assessed_at": "2026-07-17T15:05:00Z",
-      "created_at": "2026-07-17T15:05:01Z"
-    }
-  }
+  "id": "[contoh-id]",
+  "[field1]": "[contoh nilai]",
+  "createdAt": "2026-07-17T10:00:00Z"
 }
 ```
 
-**Error Responses:**
-
-* **`400 Bad Request`** — Format address salah.
-  ```json
-  {
-    "status": "error",
-    "message": "Invalid ethereum address format",
-    "code": "INVALID_ADDRESS"
-  }
-  ```
-* **`404 Not Found`** — Token tidak terdaftar.
-  ```json
-  {
-    "status": "error",
-    "message": "Token not found",
-    "code": "TOKEN_NOT_FOUND"
-  }
-  ```
+**Error Responses:** `404`, `500` — lihat format umum di atas.
 
 ---
 
-#### `GET /tokens/{address}/assessments`
+### Webhooks
 
-Mengambil daftar seluruh riwayat penilaian risiko (risk assessments) untuk token tertentu diurutkan dari yang paling baru.
+#### `POST /webhooks/[eventSource]`
 
-**Path Parameters**
+Menerima event dari sumber eksternal (contoh: oracle, indexer).
 
-| Nama | Tipe | Keterangan |
-|---|---|---|
-| `address` | string | Alamat ethereum token |
+> **Wajib:** validasi signature/HMAC pada setiap request masuk, dan tangani `idempotency key` karena event bisa terkirim ulang oleh pengirim (retry). Tanpa ini, event duplikat bisa memicu efek samping berulang (misal resolusi pool ke-trigger dua kali).
 
-**Response `200`**
+**Request Body**
 
 ```json
 {
-  "success": true,
-  "data": [
-    {
-      "id": "2b4f6d8e-9c0a-5d3e-0f1a-2b3c4d5e6f7a",
-      "token_id": "1a3e5c7d-8b9a-4c2d-9e0f-1a2b3c4d5e6f",
-      "probability": 0.8500,
-      "reasoning": "Token contains blacklist capabilities which allow the deployer to freeze funds at any time.",
-      "confidence": 0.9000,
-      "llm_model": "gpt-4o-mini",
-      "assessed_at": "2026-07-17T15:05:00Z",
-      "created_at": "2026-07-17T15:05:01Z"
-    }
-  ]
+  "eventType": "[contoh: liquidity_pulled]",
+  "timestamp": "2026-07-17T10:00:00Z",
+  "payload": {}
 }
 ```
 
-**Error Responses:**
+| Field | Tipe | Wajib | Keterangan |
+|---|---|---|---|
+| `eventType` | string | Ya | Jenis event |
+| `timestamp` | string (ISO 8601) | Ya | Waktu event terjadi |
+| `payload` | object | Ya | Data spesifik per jenis event |
 
-* **`400 Bad Request`** — Format address salah.
-  ```json
-  {
-    "status": "error",
-    "message": "Invalid ethereum address format",
-    "code": "INVALID_ADDRESS"
-  }
-  ```
-* **`404 Not Found`** — Token tidak ditemukan.
-  ```json
-  {
-    "status": "error",
-    "message": "Token not found",
-    "code": "TOKEN_NOT_FOUND"
-  }
-  ```
+**Response `200`** — event diterima, tidak ada body.
+
+**Error Responses:** `400`, `401` (signature tidak valid) — lihat format umum di atas.
 
 ---
 
@@ -219,4 +190,4 @@ Mengambil daftar seluruh riwayat penilaian risiko (risk assessments) untuk token
 
 | Versi | Tanggal | Perubahan |
 |---|---|---|
-| 1.0.0 | 2026-07-17 | Inisialisasi awal dokumentasi API Modul Token berbasis Go |
+| 1.0.0 | [tanggal] | Rilis awal |
