@@ -8,6 +8,7 @@ type Config struct {
 	DatabaseURL string
 	Port        string
 	LogLevel    string
+	RPCURL      string
 }
 
 func LoadConfig() *Config {
@@ -26,9 +27,15 @@ func LoadConfig() *Config {
 		logLevel = "info"
 	}
 
+	rpcURL := os.Getenv("RPC_URL")
+	if rpcURL == "" {
+		rpcURL = "https://sepolia.base.org"
+	}
+
 	return &Config{
 		DatabaseURL: dbURL,
 		Port:        port,
 		LogLevel:    logLevel,
+		RPCURL:      rpcURL,
 	}
 }

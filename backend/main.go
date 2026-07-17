@@ -16,6 +16,7 @@ import (
 	"guardai-be/config"
 	"guardai-be/db"
 	"guardai-be/middleware"
+	"guardai-be/token"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -64,6 +65,10 @@ func main() {
 		return
 	}
 
+	tokenRepo := token.NewRepository(dbPool)
+	tokenService := token.NewService(tokenRepo, cfg.RPCURL)
+	tokenCtrl := token.NewController(tokenService)
+
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
@@ -80,6 +85,48 @@ func main() {
 	})
 
 	mux.Handle("GET /metrics", promhttp.Handler())
+
+	mux.HandleFunc("GET /api/v1/tokens", tokenCtrl.ListTokens)
+	mux.HandleFunc("GET /api/v1/tokens/{address}", tokenCtrl.GetTokenByAddress)
+	mux.HandleFunc("GET /api/v1/tokens/{address}/assessments", tokenCtrl.GetAssessmentsByAddress)
+
+	mux.HandleFunc("GET /api/v1/swagger/doc.json", func(w http.ResponseWriter, r *http.Request) {
+		data, err := os.ReadFile("docs/swagger.json")
+		if err != nil {
+			data, err = os.ReadFile("../docs/swagger.json")
+		}
+		if err != nil {
+			data, err = os.ReadFile("backend/docs/swagger.json")
+		}
+		if err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotFound)
+			_ = json.NewEncoder(w).Encode(map[string]string{"error": "swagger.json not found"})
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(data)
+	})
+
+	mux.HandleFunc("GET /api/v1/swagger/", func(w http.ResponseWriter, r *http.Request) {
+		data, err := os.ReadFile("docs/swagger-ui.html")
+		if err != nil {
+			data, err = os.ReadFile("../docs/swagger-ui.html")
+		}
+		if err != nil {
+			data, err = os.ReadFile("backend/docs/swagger-ui.html")
+		}
+		if err != nil {
+			w.Header().Set("Content-Type", "text/plain")
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte("swagger-ui.html not found"))
+			return
+		}
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(data)
+	})
 
 	handler := middleware.Recovery(middleware.RequestLogger(middleware.PrometheusMetrics(mux)))
 
