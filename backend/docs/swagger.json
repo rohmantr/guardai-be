@@ -191,9 +191,163 @@
           }
         }
       }
+    },
+    "/assessments": {
+      "post": {
+        "summary": "Trigger risk assessment",
+        "description": "Memicu penilaian risiko AI untuk suatu token. Dilindungi oleh X-API-Key dan rate limiter (5 req/menit). Menerapkan cache 10 menit: jika ada assessment berhasil (source: llm) dalam 10 menit terakhir, data cached dikembalikan. Jika assessment terakhir source: fallback, retry inference.",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["token_address"],
+                "properties": {
+                  "token_address": {
+                    "type": "string",
+                    "pattern": "^0x[0-9a-fA-F]{40}$",
+                    "description": "Alamat Ethereum token yang akan dinilai"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Assessment baru berhasil dibuat (fresh atau fallback)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/RiskAssessment"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Mengembalikan assessment dari cache (masih dalam window 10 menit)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/RiskAssessment"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "API key tidak valid atau tidak disertakan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded (5 req/menit)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Format alamat tidak valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/assessments/{id}": {
+      "get": {
+        "summary": "Detail risk assessment",
+        "description": "Mengembalikan detail risk assessment berdasarkan UUID.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "UUID assessment"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Assessment ditemukan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/RiskAssessment"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Assessment tidak ditemukan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key",
+        "description": "API key untuk internal trigger endpoint"
+      }
+    },
     "schemas": {
       "Token": {
         "type": "object",
@@ -270,6 +424,16 @@
           },
           "llm_model": {
             "type": "string"
+          },
+          "source": {
+            "type": "string",
+            "enum": ["llm", "fallback"],
+            "description": "Sumber penilaian: llm (dari AI) atau fallback (karena LLM gagal)"
+          },
+          "raw_response": {
+            "type": "string",
+            "nullable": true,
+            "description": "Response mentah dari LLM (jika source: llm)"
           },
           "assessed_at": {
             "type": "string",
