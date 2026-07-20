@@ -64,7 +64,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.22'
+          go-version: '1.25'
           cache-dependency-path: backend/go.sum
 
       - name: Check formatting
@@ -84,4 +84,4 @@ jobs:
       - name: Run tests
         env:
           DATABASE_URL: postgresql://dev:dev@localhost:5432/rugradar_dev
-        run: go test -v ./...
+        run: go test -p 1 -v ./...
