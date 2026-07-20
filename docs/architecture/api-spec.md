@@ -25,6 +25,8 @@ Semua response gagal memakai format yang seragam dari middleware error backend:
 | `400` | `INVALID_ADDRESS` | Format alamat ethereum tidak valid |
 | `404` | `TOKEN_NOT_FOUND` | Token dengan alamat tersebut tidak ditemukan |
 | `500` | `INTERNAL_SERVER_ERROR` | Terjadi kesalahan pada server internal |
+| `401` | `UNAUTHORIZED` | Request API Key tidak valid atau kosong |
+| `429` | `RATE_LIMIT_EXCEEDED` | Jumlah request melebihi limit 5 req/menit |
 
 ## Pagination
 
@@ -136,6 +138,8 @@ Mengambil detail satu token beserta penilaian risiko (`latest_assessment`) terba
       "reasoning": "Token contains blacklist capabilities which allow the deployer to freeze funds at any time.",
       "confidence": 0.9000,
       "llm_model": "gpt-4o-mini",
+      "source": "llm",
+      "raw_response": "{\"probability\": 0.85, ...}",
       "assessed_at": "2026-07-17T15:05:00Z",
       "created_at": "2026-07-17T15:05:01Z"
     }
@@ -187,6 +191,8 @@ Mengambil daftar seluruh riwayat penilaian risiko (risk assessments) untuk token
       "reasoning": "Token contains blacklist capabilities which allow the deployer to freeze funds at any time.",
       "confidence": 0.9000,
       "llm_model": "gpt-4o-mini",
+      "source": "llm",
+      "raw_response": "{\"probability\": 0.85, ...}",
       "assessed_at": "2026-07-17T15:05:00Z",
       "created_at": "2026-07-17T15:05:01Z"
     }
@@ -215,8 +221,113 @@ Mengambil daftar seluruh riwayat penilaian risiko (risk assessments) untuk token
 
 ---
 
+### Assessments
+
+#### `POST /assessments`
+
+Memicu manual trigger penilaian risiko (AI risk assessment) untuk token berdasarkan alamat kontraknya. Endpoint ini dilindungi rate-limiter (5 req/menit) dan `X-API-Key`.
+Menerapkan window cache 10 menit. Jika token sudah memiliki assessment yang berhasil (`source: llm`) dalam 10 menit terakhir, data cached langsung dikembalikan. Jika assessment terakhir berupa `fallback` atau gagal, trigger akan memaksa retry/run inference baru.
+
+**Request Header**
+
+```
+X-API-Key: <internal_api_key>
+```
+
+**Request Body**
+
+```json
+{
+  "token_address": "0x1234567890123456789012345678901234567890"
+}
+```
+
+**Response `201 Created` / `200 OK` (Cached)**
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "2b4f6d8e-9c0a-5d3e-0f1a-2b3c4d5e6f7a",
+    "token_id": "1a3e5c7d-8b9a-4c2d-9e0f-1a2b3c4d5e6f",
+    "probability": 0.8500,
+    "reasoning": "Token contains blacklist capabilities which allow the deployer to freeze funds at any time.",
+    "confidence": 0.9000,
+    "llm_model": "gpt-4o-mini",
+    "source": "llm",
+    "raw_response": "{\"probability\": 0.85, ...}",
+    "assessed_at": "2026-07-20T10:10:00Z",
+    "created_at": "2026-07-20T10:10:00Z"
+  }
+}
+```
+
+**Error Responses:**
+
+* **`401 Unauthorized`** — API key salah atau hilang.
+  ```json
+  {
+    "status": "error",
+    "message": "Unauthorized",
+    "code": "UNAUTHORIZED"
+  }
+  ```
+* **`429 Too Many Requests`** — Request melebihi batas rate limit.
+  ```json
+  {
+    "status": "error",
+    "message": "Rate limit exceeded",
+    "code": "RATE_LIMIT_EXCEEDED"
+  }
+  ```
+
+---
+
+#### `GET /assessments/{id}`
+
+Mengambil detail penilaian risiko berdasarkan ID UUID-nya.
+
+**Path Parameters**
+
+| Nama | Tipe | Keterangan |
+|---|---|---|
+| `id` | string | ID assessment format UUID |
+
+**Response `200`**
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "2b4f6d8e-9c0a-5d3e-0f1a-2b3c4d5e6f7a",
+    "token_id": "1a3e5c7d-8b9a-4c2d-9e0f-1a2b3c4d5e6f",
+    "probability": 0.8500,
+    "reasoning": "Token contains blacklist capabilities which allow the deployer to freeze funds at any time.",
+    "confidence": 0.9000,
+    "llm_model": "gpt-4o-mini",
+    "source": "llm",
+    "raw_response": "{\"probability\": 0.85, ...}",
+    "assessed_at": "2026-07-20T10:10:00Z",
+    "created_at": "2026-07-20T10:10:00Z"
+  }
+}
+```
+
+**Error Responses:**
+
+* **`404 Not Found`** — Assessment tidak ditemukan.
+  ```json
+  {
+    "status": "error",
+    "message": "Assessment not found",
+    "code": "ASSESSMENT_NOT_FOUND"
+  }
+  ```
+
+---
+
 ## Changelog
 
 | Versi | Tanggal | Perubahan |
 |---|---|---|
-| 1.0.0 | 2026-07-17 | Inisialisasi awal dokumentasi API Modul Token berbasis Go |
+| 1.0.0 | 2026-07-20 | Ditambahkan detail assessment trigger (`POST /assessments` & `GET /assessments/{id}`) serta audit log parameters (`source`, `raw_response`). |

@@ -9,6 +9,8 @@ type Config struct {
 	Port        string
 	LogLevel    string
 	RPCURL      string
+	LLMAPIKey   string
+	LLMModel    string
 }
 
 func LoadConfig() *Config {
@@ -32,10 +34,19 @@ func LoadConfig() *Config {
 		rpcURL = "https://sepolia.base.org"
 	}
 
+	llmAPIKey := os.Getenv("LLM_API_KEY")
+
+	llmModel := os.Getenv("LLM_MODEL")
+	if llmModel == "" {
+		llmModel = "gpt-4o-mini"
+	}
+
 	return &Config{
 		DatabaseURL: dbURL,
 		Port:        port,
 		LogLevel:    logLevel,
 		RPCURL:      rpcURL,
+		LLMAPIKey:   llmAPIKey,
+		LLMModel:    llmModel,
 	}
 }

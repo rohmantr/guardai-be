@@ -13,6 +13,8 @@ import (
 	"syscall"
 	"time"
 
+	"guardai-be/assessment"
+	"guardai-be/assessment/agent"
 	"guardai-be/config"
 	"guardai-be/db"
 	"guardai-be/middleware"
@@ -69,6 +71,13 @@ func main() {
 	tokenService := token.NewService(tokenRepo, cfg.RPCURL)
 	tokenCtrl := token.NewController(tokenService)
 
+	// Initialize Assessment Module & AI Agent
+	assessRepo := assessment.NewRepository(dbPool)
+	llmClient := agent.NewLLMClient(cfg.LLMAPIKey, cfg.LLMModel)
+	riskAgent := agent.NewRiskAgent(llmClient)
+	assessService := assessment.NewService(assessRepo, tokenRepo, riskAgent, cfg.LLMModel)
+	assessCtrl := assessment.NewController(assessService, os.Getenv("INTERNAL_API_KEY"))
+
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
@@ -86,10 +95,16 @@ func main() {
 
 	mux.Handle("GET /metrics", promhttp.Handler())
 
+	// Token endpoints
 	mux.HandleFunc("GET /api/v1/tokens", tokenCtrl.ListTokens)
 	mux.HandleFunc("GET /api/v1/tokens/{address}", tokenCtrl.GetTokenByAddress)
 	mux.HandleFunc("GET /api/v1/tokens/{address}/assessments", tokenCtrl.GetAssessmentsByAddress)
 
+	// Assessment endpoints
+	mux.HandleFunc("POST /api/v1/assessments", assessCtrl.TriggerAssessment)
+	mux.HandleFunc("GET /api/v1/assessments/{id}", assessCtrl.GetAssessmentByID)
+
+	// Swagger endpoints
 	mux.HandleFunc("GET /api/v1/swagger/doc.json", func(w http.ResponseWriter, r *http.Request) {
 		data, err := os.ReadFile("docs/swagger.json")
 		if err != nil {

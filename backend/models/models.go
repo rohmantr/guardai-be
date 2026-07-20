@@ -26,6 +26,8 @@ type RiskAssessment struct {
 	Reasoning   string    `json:"reasoning" db:"reasoning"`
 	Confidence  float64   `json:"confidence" db:"confidence"`
 	LLMModel    string    `json:"llm_model" db:"llm_model"`
+	Source      string    `json:"source" db:"source"`
+	RawResponse *string   `json:"raw_response,omitempty" db:"raw_response"`
 	AssessedAt  time.Time `json:"assessed_at" db:"assessed_at"`
 	CreatedAt   time.Time `json:"created_at" db:"created_at"`
 }
